@@ -11,6 +11,7 @@ from yaml.composer import ComposerError
 
 from . import signatures
 from . import parser
+from .aggregation import get_aggregation_state, reset_aggregation_state
 from .validator_cli import get_sigma_paths_from_dir
 from .windows_event_logs import load_events
 
@@ -40,6 +41,7 @@ class PySigma:
         self.rules = {}
         self.callback = callback or self.default_callback
         self.hits = {}
+        self.aggregation_state = get_aggregation_state()
 
         for rule in rule_files:
             self.add_signature(open(rule, 'r').read())
@@ -52,12 +54,17 @@ class PySigma:
     def check_events(self, events):
         all_alerts = []
         for event in events:
-            alerts = parser.check_event(event, rules=self.rules)
+            alerts = parser.check_event(event, rules=self.rules, aggregation_state=self.aggregation_state)
             if self.callback:
                 for a in alerts:
                     self.callback(a, event)
             all_alerts.extend(alerts)
         return all_alerts
+    
+    def reset_aggregation_state(self):
+        """Reset the aggregation state. Useful when processing new log files."""
+        reset_aggregation_state()
+        self.aggregation_state = get_aggregation_state()
 
     @staticmethod
     def build_sysmon_events(logfile_path):
@@ -119,7 +126,15 @@ def check_with_rules(sample_list: List[str], rules_dir: str):
         for id, events in sigma_checker.hits.items():
             for event in events:
                 if event.get('score'):
-                    source_hits[event['score']].append(id)
+                    # Get rule title from the rules dict
+                    rule_title = "Unknown"
+                    if id in sigma_checker.rules:
+                        rule_title = sigma_checker.rules[id].title
+                    # Store as dict with id and title
+                    source_hits[event['score']].append({
+                        "id": id,
+                        "title": rule_title
+                    })
         scoreboard[sample] = source_hits
     return scoreboard
 

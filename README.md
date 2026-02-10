@@ -50,7 +50,9 @@ The program takes in event logs as .xml files in a comma-separated list, and out
 ## Work in Progress
 * Handle multiple event logs within a single .xml file
 * Handle complete set of Value Modifiers under syntax specifications for Sigma rules
-* Handle Aggregation Expressions under syntax specifications for Sigma rules
+
+## Supported Features
+* Aggregation Expressions: `count()`, `sum()`, `min()`, `max()`, `avg()` with comparison operators (`>`, `<`, `=`) and `group by` support
  
 ## Credits
  Special thanks to the creators of Sigma and all of its contributors, starting with:

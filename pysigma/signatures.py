@@ -26,11 +26,13 @@ SUPPORTED_MODIFIERS = {
     'base64offset',
     'endswith',
     'startswith',
+    're',
+    'windash',
+    'i',  # Case-insensitive modifier
     # 'utf16le',
     # 'utf16be',
     # 'wide',
     # 'utf16',
-    # 're',
 }
 
 
@@ -58,12 +60,28 @@ def apply_base64offset_modifier(x: str) -> str:
     return f"({'|'.join(offsets)})"
 
 
+def apply_windash_modifier(x: str) -> str:
+    """
+    Handle Windows command line arguments where both - and / can be used.
+    Transforms -option to match both -option and /option.
+    """
+    # Replace leading - or / with a pattern that matches either
+    if x.startswith('-') or x.startswith('/'):
+        prefix = x[0]
+        rest = x[1:]
+        return f'[-/]{rest}'
+    return x
+
+
 MODIFIER_FUNCTIONS = {
     'contains': lambda x: f'.*{x}.*',
     'base64': lambda x: apply_base64_modifier(x),
     "base64offset": lambda x: apply_base64offset_modifier(x),
     'endswith': lambda x: f'.*{x}$',
     'startswith': lambda x: f'^{x}.*',
+    're': lambda x: x,  # Pass regex through unchanged
+    'windash': lambda x: apply_windash_modifier(x),
+    'i': lambda x: x,  # Case-insensitive - Sigma is already case-insensitive by default
 }
 
 Query = Optional[Union[str, re.Pattern]]

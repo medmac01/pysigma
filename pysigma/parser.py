@@ -4,8 +4,9 @@ invoke the right sequence of searches into the rule and logic operations.
 """
 from typing import Any, Callable, Dict, Union
 
-from lark import Lark, Transformer
+from lark import Lark, Transformer, Token
 
+from .aggregation import AggregationEvaluator, get_aggregation_state
 from .build_alert import Alert, callback_buildReport, check_timeframe
 from .exceptions import UnsupportedFeature
 from .sigma_configuration import PRODUCT_CATEGORY_MAPPING
@@ -38,7 +39,7 @@ grammar = '''
         LT: "<"
         EQ: "="
         value: NUMBER
-        NUMBER: /[1-9][0-9]*/
+        NUMBER: /[0-9]+/
         NOT: "NOT"
         SEARCH_ID: /[a-zA-Z_][a-zA-Z0-9_]*/
         ALL: "all"
@@ -51,17 +52,26 @@ grammar = '''
         '''
 
 
-def check_event(raw_event, rules):
+def check_event(raw_event, rules, aggregation_state=None):
     event = prepare_event_log(raw_event)
     alerts = []
     timed_events = []
-
+    
+    if aggregation_state is None:
+        aggregation_state = get_aggregation_state()
+    
     rules = _get_relevant_rules(event, rules)
 
     for rule_id, rule_obj in rules.items():
         condition = rule_obj.get_condition()
         rule_name = rule_obj.title
-        if condition(rule_obj, event):
+        
+        # The condition function now handles aggregation internally
+        # It will:
+        # 1. Check base condition
+        # 2. If true and there's aggregation, add to state and check aggregation
+        # 3. Return true only if both pass
+        if condition(rule_obj, event, aggregation_state):
             timeframe = rule_obj.get_timeframe()
             if timeframe is not None:
                 check_timeframe(rule_obj, rule_name, timed_events, event, alerts)
@@ -175,7 +185,7 @@ class FactoryTransformer(Transformer):
     def search_id(args):
         name = args[0].value
 
-        def match_hits(signature, event):
+        def match_hits(signature, event, aggregation_state=None):
             return match_search_id(signature, event, name)
 
         return match_hits
@@ -197,8 +207,8 @@ class FactoryTransformer(Transformer):
         if negate is None:
             return value
 
-        def _negate(*state):
-            return not value(*state)
+        def _negate(signature, event, aggregation_state=None):
+            return not value(signature, event, aggregation_state)
         return _negate
 
     @staticmethod
@@ -209,9 +219,9 @@ class FactoryTransformer(Transformer):
         if len(args) == 1:
             return args[0]
 
-        def _and_operation(*state):
+        def _and_operation(signature, event, aggregation_state=None):
             for component in args:
-                if not component(*state):
+                if not component(signature, event, aggregation_state):
                     return False
             return True
 
@@ -225,9 +235,9 @@ class FactoryTransformer(Transformer):
         if len(args) == 1:
             return args[0]
 
-        def _or_operation(*state):
+        def _or_operation(signature, event, aggregation_state=None):
             for component in args:
-                if component(*state):
+                if component(signature, event, aggregation_state):
                     return True
             return False
 
@@ -235,7 +245,39 @@ class FactoryTransformer(Transformer):
 
     @staticmethod
     def pipe_rule(args):
-        return args[0]
+        # args can be [base_condition] or [base_condition, aggregation]
+        if len(args) == 1:
+            # No aggregation, just return base condition
+            return args[0]
+        
+        # There is an aggregation
+        base_condition = args[0]
+        aggregation = args[1]
+        
+        def _pipe_with_aggregation(signature, event, aggregation_state=None):
+            # First check base condition
+            if callable(base_condition):
+                base_result = base_condition(signature, event, aggregation_state)
+            else:
+                base_result = bool(base_condition)
+            
+            if not base_result:
+                return False
+            
+            # Base condition matched, add event to state for aggregation
+            if aggregation_state is None:
+                aggregation_state = get_aggregation_state()
+            
+            # Track this event before evaluating aggregation
+            aggregation_state.add_event(signature.id, event)
+            
+            # Now evaluate aggregation
+            if callable(aggregation):
+                return aggregation(signature, event, aggregation_state)
+            
+            return True
+        
+        return _pipe_with_aggregation
 
     @staticmethod
     def x_of(args):
@@ -250,17 +292,116 @@ class FactoryTransformer(Transformer):
             selector = None
 
         # Create a closure on our
-        def _check_of_sections(signature, event):
+        def _check_of_sections(signature, event, aggregation_state=None):
             return analyze_x_of(signature, event, count, selector)
         return _check_of_sections
 
     @staticmethod
+    def aggregation_function(args):
+        # Return the aggregation function name (count, min, max, avg, sum)
+        if args and hasattr(args[0], 'value'):
+            return args[0].value.lower()
+        return 'count'
+
+    @staticmethod
+    def aggregation_field(args):
+        # Return the field name for aggregation, or None if not specified
+        if args and hasattr(args[0], 'value'):
+            return args[0].value
+        return None
+
+    @staticmethod
+    def group_field(args):
+        # Return the group by field name, or None if not specified
+        if args and hasattr(args[0], 'value'):
+            return args[0].value
+        return None
+
+    @staticmethod
+    def comparison_op(args):
+        # Return the comparison operator (>, <, =)
+        if args and hasattr(args[0], 'value'):
+            return args[0].value
+        return '>'
+
+    @staticmethod
+    def value(args):
+        # Return the numeric threshold value
+        if args and hasattr(args[0], 'value'):
+            return int(args[0].value)
+        return 1
+
+    @staticmethod
     def aggregation_expression(args):
-        raise UnsupportedFeature("Aggregation expressions not supported.")
+        # Parse aggregation arguments from the tree
+        # args structure: [agg_func, agg_field, group_by, comparison_op, value]
+        # or for near aggregation: [near_aggregation]
+        
+        if len(args) == 1 and callable(args[0]):
+            # This is a near aggregation
+            return args[0]
+        
+        # Regular aggregation - extract parameters
+        # Note: The aggregation field is optional in the grammar
+        agg_func = str(args[0]).lower() if args[0] else 'count'
+        
+        # Handle different argument patterns based on grammar
+        # aggregation_function "(" [aggregation_field] ")" [ "by" group_field ] comparison_op value
+        idx = 1
+        agg_field = None
+        if idx < len(args) and args[idx] is not None:
+            agg_field = str(args[idx])
+            idx += 1
+        else:
+            idx += 1  # Skip the None placeholder
+        
+        group_by = None
+        if idx < len(args) and args[idx] is not None:
+            group_by = str(args[idx])
+            idx += 1
+        else:
+            idx += 1  # Skip the None placeholder
+        
+        comparison_op = str(args[idx]) if idx < len(args) and args[idx] else '>'
+        idx += 1
+        
+        threshold = int(args[idx]) if idx < len(args) and args[idx] else 1
+        
+        def _aggregation_check(signature, event, aggregation_state=None):
+            if aggregation_state is None:
+                aggregation_state = get_aggregation_state()
+            
+            # Get timeframe from signature if available
+            timeframe = signature.get_timeframe()
+            
+            # Evaluate the aggregation, passing the current event for group_by logic
+            evaluator = AggregationEvaluator(aggregation_state)
+            return evaluator.evaluate(
+                rule_id=signature.id,
+                func_name=agg_func,
+                field=agg_field,
+                group_by=group_by,
+                comparison_op=comparison_op,
+                threshold=threshold,
+                timeframe=timeframe,
+                current_event=event
+            )
+        
+        return _aggregation_check
 
     @staticmethod
     def near_aggregation(args):
-        raise UnsupportedFeature("Near operation not supported.")
+        # Extract the condition from near aggregation
+        condition = args[0] if args else None
+        
+        def _near_aggregation_check(signature, event, aggregation_state=None):
+            # For now, near aggregations are not fully implemented
+            # They would require tracking event sequences and temporal proximity
+            # TODO: Implement proper near aggregation with temporal window checking
+            if condition and callable(condition):
+                return condition(signature, event, aggregation_state)
+            return True
+        return _near_aggregation_check
 
 
 # Create & initialize Lark class instance

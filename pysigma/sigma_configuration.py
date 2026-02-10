@@ -1,19 +1,28 @@
 PRODUCT_CATEGORY_MAPPING = {
-    "antivirus": {
-        "antivirus": {
-            "categoryDeviceGroup": "/IDS/Host/AntiVirus"
-        }
-    },
-    "apache": {
-        "apache": {
-            "categoryDeviceGroup": "/Application",
-            "deviceProduct": "Apache"
-        },
-        "apache2": {}
+    "aws": {
+        "aws-cloudtrail": {}
     },
     "azure": {
         "azure": {
             "metdata_vendor": "Microsoft"
+        },
+        "azure-activity": {
+            "product_name": "Azure",
+            "vendor_name": "Microsoft"
+        },
+        "azure-activitylogs": {
+            "product_name": "Azure",
+            "vendor_name": "Microsoft"
+        },
+        "azure-auditlogs": {
+            "product_name": "Azure",
+            "product_source": "directoryAudits",
+            "vendor_name": "Microsoft"
+        },
+        "azure-signin": {
+            "product_name": "Azure",
+            "product_source": "signInAudits",
+            "vendor_name": "Microsoft"
         }
     },
     "azuread": {
@@ -50,15 +59,27 @@ PRODUCT_CATEGORY_MAPPING = {
         "ipfix": {}
     },
     "linux": {
-        "linux": {
-            "deviceVendor": "Unix"
+        "file_creation_linux": {
+            "EventID": 11
         },
-        "linux-auth": {},
+        "file_delete_linux": {
+            "EventID": 23
+        },
+        "linux": {},
+        "linux-audit": {
+            "product_name": "Audit",
+            "vendor_name": "Linux"
+        },
+        "linux-auditd": {},
+        "linux-auth": {
+            "device.class": "rhlinux"
+        },
         "linux-clamav": {
-            "deviceVendor": "Unix"
+            "device.class": "rhlinux"
         },
         "linux-sshd": {
-            "deviceVendor": "Unix"
+            "client": "sshd",
+            "device.class": "rhlinux"
         },
         "linux-syslog": {},
         "linux-vsftpd": {
@@ -67,35 +88,31 @@ PRODUCT_CATEGORY_MAPPING = {
         "linux_auditd": {
             "event.module": "auditd"
         },
-        "network_connectio_linux": {
+        "network_connection_linux": {
             "EventID": 3
         },
         "process_creation_linux": {
             "EventID": 1
+        },
+        "process_terminated_linux": {
+            "EventID": 5
+        },
+        "raw_access_read_linux": {
+            "EventID": 9
+        },
+        "sysmon_status_linux": {
+            "EventID": 16
         }
     },
     "m365": {
-        "AccessGovernance": {
-            "eventSource": "SecurityComplianceCenter"
+        "m365": {
+            "product_name": "365",
+            "vendor_name": "Microsoft"
         },
-        "CloudDiscovery": {
-            "eventSource": "SecurityComplianceCenter"
-        },
-        "DataLossPrevention": {
-            "eventSource": "SecurityComplianceCenter"
-        },
-        "SharingControl": {
-            "eventSource": "SecurityComplianceCenter"
-        },
-        "ThreatDetection": {
-            "eventSource": "SecurityComplianceCenter"
-        },
-        "ThreatManagement": {
-            "eventSource": "SecurityComplianceCenter"
+        "microsoft365": {
+            "product_name": "365",
+            "vendor_name": "Microsoft"
         }
-    },
-    "netflow": {
-        "netflow": {}
     },
     "nginx": {
         "nginx": {}
@@ -109,6 +126,9 @@ PRODUCT_CATEGORY_MAPPING = {
     },
     "qflow": {
         "qflow": {}
+    },
+    "qualys": {
+        "firewall-product-qualys": {}
     },
     "rails": {
         "application-rails": {}
@@ -137,9 +157,6 @@ PRODUCT_CATEGORY_MAPPING = {
     "unix": {
         "unix": {}
     },
-    "vpn": {
-        "vpn": {}
-    },
     "windows": {
         "clipboard_capture": {
             "EventID": 24
@@ -159,6 +176,9 @@ PRODUCT_CATEGORY_MAPPING = {
         "eventlogs": {
             "logSourceTypeName": "MS Windows Event Logging XML - Security"
         },
+        "file_block": {
+            "EventID": 27
+        },
         "file_change": {
             "EventID": 2
         },
@@ -171,6 +191,7 @@ PRODUCT_CATEGORY_MAPPING = {
                 26
             ]
         },
+        "firewall-product-windows": {},
         "image_loaded": {
             "EventID": 7
         },
@@ -198,7 +219,9 @@ PRODUCT_CATEGORY_MAPPING = {
         "process_creation": {
             "EventID": 1
         },
-        "process_creation_1": {},
+        "process_creation_1": {
+            "EventID": 1
+        },
         "process_creation_2": {
             "EventID": 4688
         },
@@ -226,6 +249,12 @@ PRODUCT_CATEGORY_MAPPING = {
         "raw_access_thread": {
             "EventID": 9
         },
+        "registry_add": {
+            "EventID": 12
+        },
+        "registry_delete": {
+            "EventID": 12
+        },
         "registry_event": {
             "EventID": [
                 12,
@@ -242,6 +271,28 @@ PRODUCT_CATEGORY_MAPPING = {
         "registry_event3": {
             "EventID": 14
         },
+        "registry_event_add": {
+            "EventID": 4657,
+            "OperationType": [
+                "New registry value created"
+            ]
+        },
+        "registry_event_set": {
+            "EventID": 4657,
+            "OperationType": [
+                "Existing registry value modified"
+            ]
+        },
+        "registry_rename": {
+            "EventID": 14
+        },
+        "registry_set": {
+            "EventID": 13
+        },
+        "sysmon-category-error": {},
+        "sysmon-category-status": {},
+        "sysmon-service-process_tampering": {},
+        "sysmon-windows": {},
         "sysmon_error": {
             "EventID": 255
         },
@@ -272,6 +323,21 @@ PRODUCT_CATEGORY_MAPPING = {
                 "Microsoft-Windows-AppLocker/Packaged app-Execution"
             ]
         },
+        "windows-appmodel-runtime": {
+            "Channel": "Microsoft-Windows-AppModel-Runtime/Admin"
+        },
+        "windows-appxdeployment-server": {
+            "Channel": "Microsoft-Windows-AppXDeploymentServer/Operational"
+        },
+        "windows-appxpackaging-om": {
+            "Channel": "Microsoft-Windows-AppxPackaging/Operational"
+        },
+        "windows-bitlocker": {
+            "channel": "Microsoft-Windows-BitLocker/BitLocker Management"
+        },
+        "windows-bits-client": {
+            "Channel": "Microsoft-Windows-Bits-Client/Operational"
+        },
         "windows-category-create_remote_thread": {},
         "windows-category-create_stream_hash": {},
         "windows-category-dns_query": {},
@@ -284,13 +350,17 @@ PRODUCT_CATEGORY_MAPPING = {
         "windows-category-process_access": {},
         "windows-category-process_creation": {},
         "windows-category-raw_access_thread": {},
+        "windows-category-registry_add": {},
+        "windows-category-registry_delete": {},
         "windows-category-registry_event": {},
+        "windows-category-registry_rename": {},
+        "windows-category-registry_set": {},
         "windows-category-wmi_event": {},
         "windows-classicpowershell": {
             "Channel": "Windows PowerShell"
         },
         "windows-codeintegrity-operational": {
-            "log_name": "Microsoft-Windows-CodeIntegrity/Operational"
+            "Channel": "Microsoft-Windows-CodeIntegrity/Operational"
         },
         "windows-create-remote-thread": {
             "product_name": "Sysmon",
@@ -302,14 +372,20 @@ PRODUCT_CATEGORY_MAPPING = {
         "windows-dhcp": {
             "Channel": "Microsoft-Windows-DHCP-Server/Operational"
         },
+        "windows-diagnosis": {
+            "channel": "Microsoft-Windows-Diagnosis-Scripted/Operational"
+        },
+        "windows-diagnosis-scripted": {
+            "Channel": "Microsoft-Windows-Diagnosis-Scripted/Operational"
+        },
         "windows-dns": {
             "deviceProduct": "DNS-Server",
             "deviceVendor": "Microsoft"
         },
-        "windows-dns-query": {
-            "product_name": "Sysmon",
-            "vendor_id": "22"
+        "windows-dns-client": {
+            "Channel": "Microsoft-Windows-DNS Client Events/Operational"
         },
+        "windows-dns-query": {},
         "windows-dns-server": {
             "Channel": "DNS Server"
         },
@@ -326,6 +402,14 @@ PRODUCT_CATEGORY_MAPPING = {
             "product_name": "Sysmon",
             "vendor_id": "6"
         },
+        "windows-file-block-executable": {
+            "product_name": "Sysmon",
+            "vendor_id": 27
+        },
+        "windows-file-change": {
+            "product_name": "Sysmon",
+            "vendor_id": "2"
+        },
         "windows-file-create": {
             "product_name": "Sysmon",
             "vendor_id": "11"
@@ -339,15 +423,27 @@ PRODUCT_CATEGORY_MAPPING = {
             "product_name": "Sysmon",
             "vendor_id": "11"
         },
+        "windows-firewall-advanced-security": {
+            "Channel": "Microsoft-Windows-Windows Firewall With Advanced Security/Firewall"
+        },
         "windows-image-load": {
             "product_name": "Sysmon",
             "vendor_id": "7"
         },
+        "windows-kernel-file-access": {
+            "product_name": "Kernel-File"
+        },
+        "windows-kernel-file-rename": {
+            "product_name": "Kernel-File"
+        },
         "windows-ladp-client-debug": {
             "Channel": "Microsoft-Windows-LDAP-Client/Debug"
         },
-        "windows-ldap-query": {
-            "channel": "Microsoft-Windows-LDAP-Client/Debug ETW"
+        "windows-ldap-debug": {
+            "Channel": "Microsoft-Windows-LDAP-Client/Debug"
+        },
+        "windows-lsa-server": {
+            "Channel": "Microsoft-Windows-LSA/Operational"
         },
         "windows-msexchange-management": {
             "Channel": "MSExchange Management"
@@ -358,6 +454,9 @@ PRODUCT_CATEGORY_MAPPING = {
         },
         "windows-ntlm": {
             "Channel": "Microsoft-Windows-NTLM/Operational"
+        },
+        "windows-openssh": {
+            "Channel": "OpenSSH/Operational"
         },
         "windows-pc": {
             "deviceVendor": "Microsoft"
@@ -370,10 +469,13 @@ PRODUCT_CATEGORY_MAPPING = {
             ]
         },
         "windows-power": {
-            "deviceVendor": "Microsoft"
+            "device.type": "winevent_nic"
         },
         "windows-powershell": {
-            "Channel": "Microsoft-Windows-PowerShell/Operational"
+            "Channel": [
+                "Microsoft-Windows-PowerShell/Operational",
+                "PowerShellCore/Operational"
+            ]
         },
         "windows-powershell-classic": {},
         "windows-printservice-admin": {
@@ -395,6 +497,10 @@ PRODUCT_CATEGORY_MAPPING = {
             "product_name": "Windows PowerShell",
             "vendor_id": 800
         },
+        "windows-ps-classic-start": {
+            "EventID": 400,
+            "product_name": "Windows PowerShell"
+        },
         "windows-ps-module": {
             "product_name": "PowerShell",
             "vendor_id": 4103
@@ -408,18 +514,38 @@ PRODUCT_CATEGORY_MAPPING = {
             "vendor_id": 9
         },
         "windows-registry": {
+            "product_name": "Sysmon",
             "vendor_id": [
                 12,
                 13,
                 14
             ]
         },
+        "windows-registry-add": {
+            "product_name": "Sysmon",
+            "vendor_id": 12
+        },
+        "windows-registry-delete": {
+            "product_name": "Sysmon",
+            "vendor_id": 12
+        },
+        "windows-registry-rename": {
+            "product_name": "Sysmon",
+            "vendor_id": 14
+        },
+        "windows-registry-set": {
+            "product_name": "Sysmon",
+            "vendor_id": 13
+        },
         "windows-sec": {
-            "deviceProduct": "Microsoft Windows",
-            "deviceVendor": "Microsoft"
+            "device.type": "winevent_nic",
+            "event.source": "microsoft-windows-security-auditing"
         },
         "windows-security": {
             "Channel": "Security"
+        },
+        "windows-security-mitigations": {
+            "Channel": "Microsoft-Windows-Security-Mitigations"
         },
         "windows-service-applocker": {},
         "windows-service-dns-server": {},
@@ -437,6 +563,9 @@ PRODUCT_CATEGORY_MAPPING = {
         "windows-servicebus-client": {
             "Channel": "Microsoft-ServiceBus-Client"
         },
+        "windows-shell-core": {
+            "Channel": "Microsoft-Windows-Shell-Core/Operational"
+        },
         "windows-smbclient-security": {
             "Channel": "Microsoft-Windows-SmbClient/Security"
         },
@@ -445,8 +574,8 @@ PRODUCT_CATEGORY_MAPPING = {
             "vendor_id": "15"
         },
         "windows-sys": {
-            "deviceProduct": "Sysmon",
-            "deviceVendor": "Microsoft"
+            "device.type": "winevent_nic",
+            "event.source": "microsoft-windows-security-auditing"
         },
         "windows-sysmon": {
             "Channel": "Microsoft-Windows-Sysmon/Operational"
@@ -471,8 +600,18 @@ PRODUCT_CATEGORY_MAPPING = {
         "windows-taskscheduler-operational": {
             "Channel": "Microsoft-Windows-TaskScheduler/Operational"
         },
+        "windows-terminalservices-localsessionmanager-operational": {
+            "Channel": "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational"
+        },
+        "windows-vhdmp": {},
+        "windows-vhdmp-Operational": {
+            "Channel": "Microsoft-Windows-VHDMP/Operational"
+        },
+        "windows-vhdmp-operational": {
+            "Channel": "Microsoft-Windows-VHDMP/Operational"
+        },
         "windows-wmi": {
-            "deviceVendor": "Microsoft"
+            "LogName": "Microsoft-Windows-WMI-Activity/Operational"
         },
         "windows-wmi-activity-Operational": {
             "Channel": "Microsoft-Windows-WMI-Activity/Operational"
